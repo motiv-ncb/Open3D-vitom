@@ -34,7 +34,7 @@ class Feature;
 /// \p relative_fitness_ and \p relative_rmse_ individually, or the iteration
 /// number exceeds \p max_iteration_.
 class ICPConvergenceCriteria {
-public:
+  public:
     /// \brief Parameterized Constructor.
     ///
     /// \param relative_fitness If relative change (difference) of fitness score
@@ -50,7 +50,7 @@ public:
           max_iteration_(max_iteration) {}
     ~ICPConvergenceCriteria() {}
 
-public:
+  public:
     /// If relative change (difference) of fitness score is lower than
     /// `relative_fitness`, the iteration stops.
     double relative_fitness_;
@@ -72,7 +72,7 @@ public:
 /// fitness^{ransac_n}), where ransac_n is the number of points used during a
 /// ransac iteration. Use confidence=1.0 to avoid early termination.
 class RANSACConvergenceCriteria {
-public:
+  public:
     /// \brief Parameterized Constructor.
     ///
     /// \param max_iteration Maximum iteration before iteration stops.
@@ -85,7 +85,7 @@ public:
 
     ~RANSACConvergenceCriteria() {}
 
-public:
+  public:
     /// Maximum iteration before iteration stops.
     int max_iteration_;
     /// Desired probability of success.
@@ -96,12 +96,12 @@ public:
 ///
 /// Class that contains the registration results.
 class RegistrationResult {
-public:
+  public:
     /// \brief Parameterized Constructor.
     ///
     /// \param transformation The estimated transformation matrix.
     RegistrationResult(
-            const Eigen::Matrix4d &transformation = Eigen::Matrix4d::Identity())
+        const Eigen::Matrix4d &transformation = Eigen::Matrix4d::Identity())
         : transformation_(transformation), inlier_rmse_(0.0), fitness_(0.0) {}
     ~RegistrationResult() {}
     bool IsBetterRANSACThan(const RegistrationResult &other) const {
@@ -109,7 +109,7 @@ public:
                                              inlier_rmse_ < other.inlier_rmse_);
     }
 
-public:
+  public:
     /// The estimated transformation matrix.
     Eigen::Matrix4d_u transformation_;
     /// Correspondence set between source and target point cloud.
@@ -132,10 +132,10 @@ public:
 /// source to target. Default value: array([[1., 0., 0., 0.], [0., 1., 0., 0.],
 /// [0., 0., 1., 0.], [0., 0., 0., 1.]]).
 RegistrationResult EvaluateRegistration(
-        const geometry::PointCloud &source,
-        const geometry::PointCloud &target,
-        double max_correspondence_distance,
-        const Eigen::Matrix4d &transformation = Eigen::Matrix4d::Identity());
+    const geometry::PointCloud &source,
+    const geometry::PointCloud &target,
+    double max_correspondence_distance,
+    const Eigen::Matrix4d &transformation = Eigen::Matrix4d::Identity());
 
 /// \brief Functions for ICP registration.
 ///
@@ -148,13 +148,51 @@ RegistrationResult EvaluateRegistration(
 /// \param estimation Estimation method.
 /// \param criteria Convergence criteria.
 RegistrationResult RegistrationICP(
-        const geometry::PointCloud &source,
-        const geometry::PointCloud &target,
-        double max_correspondence_distance,
-        const Eigen::Matrix4d &init = Eigen::Matrix4d::Identity(),
-        const TransformationEstimation &estimation =
-                TransformationEstimationPointToPoint(false),
-        const ICPConvergenceCriteria &criteria = ICPConvergenceCriteria());
+    const geometry::PointCloud &source,
+    const geometry::PointCloud &target,
+    double max_correspondence_distance,
+    const Eigen::Matrix4d &init = Eigen::Matrix4d::Identity(),
+    const TransformationEstimation &estimation =
+        TransformationEstimationPointToPoint(false),
+    const ICPConvergenceCriteria &criteria = ICPConvergenceCriteria());
+
+/// \brief Functions for ICP registration, translation only.
+///
+/// \param source The source point cloud.
+/// \param target The target point cloud.
+/// \param max_correspondence_distance Maximum correspondence points-pair
+/// distance. \param init Initial transformation estimation.
+///  Default value: array([[1., 0., 0., 0.], [0., 1., 0., 0.], [0., 0., 1., 0.],
+///  [0., 0., 0., 1.]])
+/// \param estimation Estimation method.
+/// \param criteria Convergence criteria.
+RegistrationResult RegistrationICPTranslation(
+    const geometry::PointCloud &source,
+    const geometry::PointCloud &target,
+    double max_correspondence_distance,
+    const Eigen::Matrix4d &init = Eigen::Matrix4d::Identity(),
+    const TransformationEstimationPointToPlane &estimation =
+        TransformationEstimationPointToPlane(),
+    const ICPConvergenceCriteria &criteria = ICPConvergenceCriteria());
+
+/// \brief Functions for ICP registration, rotation only.
+///
+/// \param source The source point cloud.
+/// \param target The target point cloud.
+/// \param max_correspondence_distance Maximum correspondence points-pair
+/// distance. \param init Initial transformation estimation.
+///  Default value: array([[1., 0., 0., 0.], [0., 1., 0., 0.], [0., 0., 1., 0.],
+///  [0., 0., 0., 1.]])
+/// \param estimation Estimation method.
+/// \param criteria Convergence criteria.
+RegistrationResult RegistrationICPRotation(
+    const geometry::PointCloud &source,
+    const geometry::PointCloud &target,
+    double max_correspondence_distance,
+    const Eigen::Matrix4d &init = Eigen::Matrix4d::Identity(),
+    const TransformationEstimationPointToPlane &estimation =
+        TransformationEstimationPointToPlane(),
+    const ICPConvergenceCriteria &criteria = ICPConvergenceCriteria());
 
 /// \brief Function for global RANSAC registration based on a given set of
 /// correspondences.
@@ -169,17 +207,17 @@ RegistrationResult RegistrationICP(
 /// \param checkers Correspondence checker.
 /// \param criteria Convergence criteria.
 RegistrationResult RegistrationRANSACBasedOnCorrespondence(
-        const geometry::PointCloud &source,
-        const geometry::PointCloud &target,
-        const CorrespondenceSet &corres,
-        double max_correspondence_distance,
-        const TransformationEstimation &estimation =
-                TransformationEstimationPointToPoint(false),
-        int ransac_n = 3,
-        const std::vector<std::reference_wrapper<const CorrespondenceChecker>>
-                &checkers = {},
-        const RANSACConvergenceCriteria &criteria =
-                RANSACConvergenceCriteria());
+    const geometry::PointCloud &source,
+    const geometry::PointCloud &target,
+    const CorrespondenceSet &corres,
+    double max_correspondence_distance,
+    const TransformationEstimation &estimation =
+        TransformationEstimationPointToPoint(false),
+    int ransac_n = 3,
+    const std::vector<std::reference_wrapper<const CorrespondenceChecker>>
+    &checkers = {},
+    const RANSACConvergenceCriteria &criteria =
+        RANSACConvergenceCriteria());
 
 /// \brief Function for global RANSAC registration based on feature matching.
 ///
@@ -195,19 +233,19 @@ RegistrationResult RegistrationRANSACBasedOnCorrespondence(
 /// \param checkers Correspondence checker.
 /// \param criteria Convergence criteria.
 RegistrationResult RegistrationRANSACBasedOnFeatureMatching(
-        const geometry::PointCloud &source,
-        const geometry::PointCloud &target,
-        const Feature &source_features,
-        const Feature &target_features,
-        bool mutual_filter,
-        double max_correspondence_distance,
-        const TransformationEstimation &estimation =
-                TransformationEstimationPointToPoint(false),
-        int ransac_n = 3,
-        const std::vector<std::reference_wrapper<const CorrespondenceChecker>>
-                &checkers = {},
-        const RANSACConvergenceCriteria &criteria =
-                RANSACConvergenceCriteria());
+    const geometry::PointCloud &source,
+    const geometry::PointCloud &target,
+    const Feature &source_features,
+    const Feature &target_features,
+    bool mutual_filter,
+    double max_correspondence_distance,
+    const TransformationEstimation &estimation =
+        TransformationEstimationPointToPoint(false),
+    int ransac_n = 3,
+    const std::vector<std::reference_wrapper<const CorrespondenceChecker>>
+    &checkers = {},
+    const RANSACConvergenceCriteria &criteria =
+        RANSACConvergenceCriteria());
 
 /// \param source The source point cloud.
 /// \param target The target point cloud.
@@ -215,10 +253,10 @@ RegistrationResult RegistrationRANSACBasedOnFeatureMatching(
 /// distance. \param transformation The 4x4 transformation matrix to transform
 /// `source` to `target`.
 Eigen::Matrix6d GetInformationMatrixFromPointClouds(
-        const geometry::PointCloud &source,
-        const geometry::PointCloud &target,
-        double max_correspondence_distance,
-        const Eigen::Matrix4d &transformation);
+    const geometry::PointCloud &source,
+    const geometry::PointCloud &target,
+    double max_correspondence_distance,
+    const Eigen::Matrix4d &transformation);
 
 }  // namespace registration
 }  // namespace pipelines
