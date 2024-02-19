@@ -1045,16 +1045,17 @@ static bool WritePCDData(FILE *file,
             }
         }
     } else if (header.datatype == PCDDataType::BINARY) {
-        std::vector<char> buffer((header.pointsize * header.points));
-        std::uint32_t buffer_index = 0;
+        std::size_t buffer_size = static_cast<std::size_t>(header.points) * header.pointsize; 
+        std::vector<char> buffer(buffer_size);
+        std::size_t buffer_index = 0;
         for (std::int64_t i = 0; i < num_points; ++i) {
             for (auto &it : attribute_ptrs) {
                 DISPATCH_DTYPE_TO_TEMPLATE(it.dtype_, [&]() {
                     const scalar_t *data_ptr =
                             static_cast<const scalar_t *>(it.data_ptr_);
 
-                    for (int idx_offset = it.group_size_ * i;
-                         idx_offset < it.group_size_ * (i + 1); ++idx_offset) {
+                    for (std::size_t idx_offset = it.group_size_ * static_cast<std::size_t>(i);
+                         idx_offset < it.group_size_ * static_cast<std::size_t>(i + 1); ++idx_offset) {
                         std::memcpy(buffer.data() + buffer_index,
                                     reinterpret_cast<const char *>(
                                             &data_ptr[idx_offset]),
@@ -1082,33 +1083,33 @@ static bool WritePCDData(FILE *file,
         // 75%-100% writing compressed buffer
         reporter.SetTotal(report_total);
 
-        const std::uint32_t buffer_size_in_bytes =
-                header.pointsize * header.points;
+        const std::size_t buffer_size_in_bytes =
+                header.pointsize * static_cast<std::size_t>(header.points); 
         std::vector<char> buffer(buffer_size_in_bytes);
-        std::vector<char> buffer_compressed(2 * buffer_size_in_bytes);
+        std::vector<char> buffer_compressed(static_cast<std::size_t>(1.25 * buffer_size_in_bytes));
 
-        std::uint32_t buffer_index = 0;
+        std::size_t buffer_index = 0;
         std::int64_t count = 0;
         for (auto &it : attribute_ptrs) {
             DISPATCH_DTYPE_TO_TEMPLATE(it.dtype_, [&]() {
                 const scalar_t *data_ptr =
                         static_cast<const scalar_t *>(it.data_ptr_);
 
-                for (int idx_offset = 0; idx_offset < it.group_size_;
+                for (std::size_t idx_offset = 0; idx_offset < static_cast<std::size_t>(it.group_size_);
                      ++idx_offset) {
                     for (std::int64_t i = 0; i < num_points; ++i) {
                         std::memcpy(buffer.data() + buffer_index,
                                     reinterpret_cast<const char *>(
-                                            &data_ptr[i * it.group_size_ +
+                                            &data_ptr[static_cast<std::size_t>(i) * static_cast<std::size_t>(it.group_size_) +
                                                       idx_offset]),
                                     sizeof(scalar_t));
-                        buffer_index += sizeof(scalar_t);
+                        buffer_index += sizeof(scalar_t); 
                     }
                 }
             });
 
             reporter.Update(count++);
-        }
+        } 
 
         std::uint32_t size_compressed = lzf_compress(
                 buffer.data(), buffer_size_in_bytes, buffer_compressed.data(),
