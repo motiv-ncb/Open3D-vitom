@@ -438,7 +438,7 @@ static void ReadBinaryPCDColorsFromField(ReadAttributePtr &attr,
 static void ReadBinaryPCDElementsFromField(ReadAttributePtr &attr,
                                            const PCLPointField &field,
                                            const void *data_ptr,
-                                           const int index) {
+                                           const std::size_t index) {
     DISPATCH_DTYPE_TO_TEMPLATE(
             GetDtypeFromPCDHeaderField(field.type, field.size), [&] {
                 scalar_t *attr_data_ptr =
@@ -552,7 +552,8 @@ static bool ReadPCDData(FILE *file,
         }
     } else if (header.datatype == PCDDataType::BINARY) {
         std::unique_ptr<char[]> buffer(new char[header.pointsize]);
-        for (int i = 0; i < header.points; ++i) {
+        std::size_t total_points = static_cast<std::size_t>(header.points);
+        for (std::size_t i = 0; i < total_points; ++i) {
             if (fread(buffer.get(), header.pointsize, 1, file) != 1) {
                 utility::LogWarning(
                         "[ReadPCDData] Failed to read data record.");
