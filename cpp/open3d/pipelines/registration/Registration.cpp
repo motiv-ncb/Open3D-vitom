@@ -354,6 +354,50 @@ Eigen::Matrix6d GetInformationMatrixFromPointClouds(
     return GTG;
 }
 
+Eigen::Matrix6d GetInformationMatrix(const geometry::PointCloud &source,
+                                     const geometry::PointCloud &target,
+                                     double max_correspondence_distance,
+                                     const Eigen::Matrix4d &transformation) {
+    if (!target.HasNormals()) {
+        utility::LogError(
+                "Require pre-computed normal vectors for target "
+                "PointCloud.");
+    }
+
+    geometry::PointCloud pcd = source;
+    if (!transformation.isIdentity()) {
+        pcd.Transform(transformation);
+    }
+    geometry::KDTreeFlann target_kdtree(target);
+    auto result = GetRegistrationResultAndCorrespondences(
+            pcd, target, target_kdtree, max_correspondence_distance,
+            transformation);
+    auto kernel_ = std::make_shared<L2Loss>();
+    auto compute_jacobian_and_residual = [&](int i, Eigen::Vector6d &J_r,
+                                             double &r, double &w) {
+        const Eigen::Vector3d &vs =
+                source.points_[result.correspondence_set_[i][0]];
+        const Eigen::Vector3d &vt =
+                target.points_[result.correspondence_set_[i][1]];
+        const Eigen::Vector3d &nt =
+                target.normals_[result.correspondence_set_[i][1]];
+        r = (vs - vt).dot(nt);
+        w = kernel_->Weight(r);
+        J_r.block<3, 1>(0, 0) = vs.cross(nt);
+        J_r.block<3, 1>(3, 0) = nt;
+    };
+
+    Eigen::Matrix6d JTJ;
+    Eigen::Vector6d JTr;
+    double r2;
+    std::tie(JTJ, JTr, r2) =
+            utility::ComputeJTJandJTr<Eigen::Matrix6d, Eigen::Vector6d>(
+                    compute_jacobian_and_residual,
+                    (int)result.correspondence_set_.size());
+
+    return JTJ;
+}
+
 }  // namespace registration
 }  // namespace pipelines
 }  // namespace open3d

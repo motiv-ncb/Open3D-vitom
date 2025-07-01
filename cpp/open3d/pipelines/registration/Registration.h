@@ -220,6 +220,11 @@ Eigen::Matrix6d GetInformationMatrixFromPointClouds(
         double max_correspondence_distance,
         const Eigen::Matrix4d &transformation);
 
+Eigen::Matrix6d GetInformationMatrix(const geometry::PointCloud &source,
+                                     const geometry::PointCloud &target,
+                                     double max_correspondence_distance,
+                                     const Eigen::Matrix4d &transformation);
+
 }  // namespace registration
 }  // namespace pipelines
 }  // namespace open3d
