@@ -685,6 +685,14 @@ void pybind_registration_methods(py::module &m) {
           "transformation"_a);
     docstring::FunctionDocInject(m, "get_information_matrix_from_point_clouds",
                                  map_shared_argument_docstrings);
+    m.def("get_information_matrix", &GetInformationMatrix,
+          py::call_guard<py::gil_scoped_release>(),
+          "Function for computing information matrix from approximation "
+          "of the Hessian matrix",
+          "source"_a, "target"_a, "max_correspondence_distance"_a,
+          "transformation"_a);
+    docstring::FunctionDocInject(m, "get_information_matrix",
+                                 map_shared_argument_docstrings);
 }
 
 void pybind_registration(py::module &m) {
