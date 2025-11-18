@@ -121,6 +121,7 @@ public:
     /// For RANSAC: inlier ratio (# of inlier correspondences / # of
     /// all correspondences)
     double fitness_;
+    Eigen::Matrix6d_u information_;
 };
 
 /// \brief Function for evaluating registration between point clouds.
@@ -219,6 +220,10 @@ Eigen::Matrix6d GetInformationMatrixFromPointClouds(
         const geometry::PointCloud &target,
         double max_correspondence_distance,
         const Eigen::Matrix4d &transformation);
+
+Eigen::Matrix6d GetInformationMatrixFromCorrespondenceSet(
+        const geometry::PointCloud &target,
+        const CorrespondenceSet &corres);
 
 }  // namespace registration
 }  // namespace pipelines

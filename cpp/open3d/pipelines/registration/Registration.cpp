@@ -6,6 +6,7 @@
 // ----------------------------------------------------------------------------
 
 #include "open3d/pipelines/registration/Registration.h"
+#include <open3d/utility/Eigen.h>
 
 #include "open3d/geometry/KDTreeFlann.h"
 #include "open3d/geometry/PointCloud.h"
@@ -138,14 +139,18 @@ RegistrationResult RegistrationICP(
     for (int i = 0; i < criteria.max_iteration_; i++) {
         utility::LogDebug("ICP Iteration #{:d}: Fitness {:.4f}, RMSE {:.4f}", i,
                           result.fitness_, result.inlier_rmse_);
-        Eigen::Matrix4d update = estimation.ComputeTransformation(
+        // TODO: should create a separate function if we don't need the information matrix
+        ResultICP icp_result = estimation.ComputeTransformationAndInformation(
                 pcd, target_initialized, result.correspondence_set_);
+        Eigen::Matrix4d update = icp_result.transformation;
+        result.information_ = icp_result.information;
         transformation = update * transformation;
         pcd.Transform(update);
         RegistrationResult backup = result;
         result = GetRegistrationResultAndCorrespondences(
                 pcd, target_initialized, kdtree, max_correspondence_distance,
                 transformation);
+        result.information_ = backup.information_;
         if (std::abs(backup.fitness_ - result.fitness_) <
                     criteria.relative_fitness_ &&
             std::abs(backup.inlier_rmse_ - result.inlier_rmse_) <
@@ -309,6 +314,15 @@ Eigen::Matrix6d GetInformationMatrixFromPointClouds(
             pcd, target, target_kdtree, max_correspondence_distance,
             transformation);
 
+  Eigen::Matrix6d information = GetInformationMatrixFromCorrespondenceSet(
+            target, result.correspondence_set_);
+
+    return information;
+}
+
+Eigen::Matrix6d GetInformationMatrixFromCorrespondenceSet(
+        const geometry::PointCloud &target,
+        const CorrespondenceSet &corres) {
     // write q^*
     // see http://redwood-data.org/indoor/registration.html
     // note: I comes first in this implementation
@@ -318,8 +332,8 @@ Eigen::Matrix6d GetInformationMatrixFromPointClouds(
         Eigen::Matrix6d GTG_private = Eigen::Matrix6d::Zero();
         Eigen::Vector6d G_r_private = Eigen::Vector6d::Zero();
 #pragma omp for nowait
-        for (int c = 0; c < int(result.correspondence_set_.size()); c++) {
-            int t = result.correspondence_set_[c](1);
+        for (int c = 0; c < int(corres.size()); c++) {
+            int t = corres[c](1);
             double x = target.points_[t](0);
             double y = target.points_[t](1);
             double z = target.points_[t](2);
@@ -339,7 +353,7 @@ Eigen::Matrix6d GetInformationMatrixFromPointClouds(
             G_r_private(5) = 1.0;
             GTG_private.noalias() += G_r_private * G_r_private.transpose();
         }
-#pragma omp critical(GetInformationMatrixFromPointClouds)
+#pragma omp critical(GetInformationMatrixFromCorrespondenceSet)
         { GTG += GTG_private; }
     }
     return GTG;

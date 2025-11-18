@@ -109,6 +109,43 @@ Eigen::Matrix4d TransformationEstimationPointToPlane::ComputeTransformation(
     return is_success ? extrinsic : Eigen::Matrix4d::Identity();
 }
 
+ResultICP TransformationEstimationPointToPlane::ComputeTransformationAndInformation(
+            const geometry::PointCloud &source,
+            const geometry::PointCloud &target,
+            const CorrespondenceSet &corres) const {
+    if (corres.empty() || !target.HasNormals())
+        return {Eigen::Matrix4d::Identity(), Eigen::Matrix6d::Identity()};
+
+    auto compute_jacobian_and_residual = [&](int i, Eigen::Vector6d &J_r,
+                                             double &r, double &w) {
+        const Eigen::Vector3d &vs = source.points_[corres[i][0]];
+        const Eigen::Vector3d &vt = target.points_[corres[i][1]];
+        const Eigen::Vector3d &nt = target.normals_[corres[i][1]];
+        r = (vs - vt).dot(nt);
+        w = kernel_->Weight(r);
+        J_r.block<3, 1>(0, 0) = vs.cross(nt);
+        J_r.block<3, 1>(3, 0) = nt;
+    };
+
+    Eigen::Matrix6d JTJ;
+    Eigen::Vector6d JTr;
+    double r2;
+    std::tie(JTJ, JTr, r2) =
+            utility::ComputeJTJandJTr<Eigen::Matrix6d, Eigen::Vector6d>(
+                    compute_jacobian_and_residual, (int)corres.size());
+
+    bool is_success;
+    Eigen::Matrix4d extrinsic;
+    std::tie(is_success, extrinsic) =
+            utility::SolveJacobianSystemAndObtainExtrinsicMatrix(JTJ, JTr);
+
+    if (!is_success) {
+        extrinsic.setIdentity();
+    }
+
+    return {extrinsic, JTJ};
+}
+
 std::tuple<std::shared_ptr<const geometry::PointCloud>,
            std::shared_ptr<const geometry::PointCloud>>
 TransformationEstimationPointToPlane::InitializePointCloudsForTransformation(

@@ -596,6 +596,10 @@ must hold true for all edges.)");
                     "fitness", &RegistrationResult::fitness_,
                     "float: The overlapping area (# of inlier correspondences "
                     "/ # of points in source). Higher is better.")
+            .def_readwrite("information",
+                           &RegistrationResult::information_,
+                           "``6 x 6`` float64 numpy array: The estimated "
+                           "information matrix.")
             .def("__repr__", [](const RegistrationResult &rr) {
                 return fmt::format(
                         "RegistrationResult with "

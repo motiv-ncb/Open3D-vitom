@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <open3d/utility/Eigen.h>
 #include <Eigen/Core>
 #include <memory>
 #include <string>
@@ -32,6 +33,11 @@ enum class TransformationEstimationType {
     PointToPlane = 2,
     ColoredICP = 3,
     GeneralizedICP = 4,
+};
+
+struct ResultICP {
+    Eigen::Matrix4d transformation;
+    Eigen::Matrix6d information;
 };
 
 /// \class TransformationEstimation
@@ -67,6 +73,16 @@ public:
             const geometry::PointCloud &source,
             const geometry::PointCloud &target,
             const CorrespondenceSet &corres) const = 0;
+
+    virtual ResultICP ComputeTransformationAndInformation(
+            const geometry::PointCloud &source,
+            const geometry::PointCloud &target,
+            const CorrespondenceSet &corres) const {
+        auto transformation = ComputeTransformation(source, target, corres);
+        // auto information = GetInformationMatrixFromCorrespondenceSet(target, corres);
+        // return {transformation, information};
+        return {transformation, Eigen::Matrix6d::Identity()};
+  };
 
     /// Initialize the source and target point cloud for the transformation
     /// estimation.
@@ -153,6 +169,10 @@ public:
                        const geometry::PointCloud &target,
                        const CorrespondenceSet &corres) const override;
     Eigen::Matrix4d ComputeTransformation(
+            const geometry::PointCloud &source,
+            const geometry::PointCloud &target,
+            const CorrespondenceSet &corres) const override;
+    ResultICP ComputeTransformationAndInformation(
             const geometry::PointCloud &source,
             const geometry::PointCloud &target,
             const CorrespondenceSet &corres) const override;
