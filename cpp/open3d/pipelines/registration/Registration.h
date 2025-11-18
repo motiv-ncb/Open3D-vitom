@@ -157,6 +157,14 @@ RegistrationResult RegistrationICP(
                 TransformationEstimationPointToPoint(false),
         const ICPConvergenceCriteria &criteria = ICPConvergenceCriteria());
 
+RegistrationResult RegistrationICPStaged(
+        const geometry::PointCloud &source,
+        const geometry::PointCloud &target,
+        const std::vector<double> &max_correspondence_distances,
+        const Eigen::Matrix4d &init,
+        const TransformationEstimation &estimation,
+        const std::vector<ICPConvergenceCriteria> &criterias);
+
 /// \brief Function for global RANSAC registration based on a given set of
 /// correspondences.
 ///

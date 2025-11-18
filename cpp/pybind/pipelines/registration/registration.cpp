@@ -697,6 +697,17 @@ must hold true for all edges.)");
                                  map_shared_argument_docstrings);
 
     m_registration.def(
+            "registration_icp_staged", &RegistrationICPStaged,
+            py::call_guard<py::gil_scoped_release>(),
+            "Function for multistaged ICP registration", "source"_a, "target"_a,
+            "max_correspondence_distances"_a,
+            "init"_a,
+            "estimation_method"_a,
+            "criterias"_a);
+    docstring::FunctionDocInject(m_registration, "registration_icp_staged",
+                                 map_shared_argument_docstrings);
+
+    m_registration.def(
             "registration_ransac_based_on_correspondence",
             &RegistrationRANSACBasedOnCorrespondence,
             py::call_guard<py::gil_scoped_release>(),

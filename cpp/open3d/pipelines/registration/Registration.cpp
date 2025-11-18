@@ -161,6 +161,68 @@ RegistrationResult RegistrationICP(
     return result;
 }
 
+RegistrationResult RegistrationICPStaged(
+        const geometry::PointCloud &source,
+        const geometry::PointCloud &target,
+        const std::vector<double> &max_correspondence_distances,
+        const Eigen::Matrix4d &init,
+        const TransformationEstimation &estimation,
+        const std::vector<ICPConvergenceCriteria> &criterias) {
+    if (max_correspondence_distances.size() != criterias.size()){
+        utility::LogError("Invalid max_correspondence_distances and criterias");
+    }
+
+    for (const auto& distance: max_correspondence_distances) {
+        if (distance <= 0.0) {
+            utility::LogError("Invalid max_correspondence_distances.");
+        }
+    }
+
+    auto [source_initialized_c, target_initialized_c] =
+            estimation.InitializePointCloudsForTransformation(
+                    source, target, max_correspondence_distances[0]);
+
+    Eigen::Matrix4d transformation = init;
+    geometry::KDTreeFlann kdtree;
+    const geometry::PointCloud &target_initialized = *target_initialized_c;
+    kdtree.SetGeometry(target_initialized);
+    geometry::PointCloud pcd(*source_initialized_c);
+
+    if (!init.isIdentity()) {
+        pcd.Transform(init);
+    }
+    RegistrationResult result;
+    for (size_t i = 0; i < criterias.size(); ++i) {
+        auto criteria = criterias[i];
+        auto max_correspondence_distance = max_correspondence_distances[i];
+        result = GetRegistrationResultAndCorrespondences(
+            pcd, target_initialized, kdtree, max_correspondence_distance,
+            transformation);
+        for (int i = 0; i < criteria.max_iteration_; i++) {
+            utility::LogDebug("ICP Iteration #{:d}: Fitness {:.4f}, RMSE {:.4f}", i,
+                              result.fitness_, result.inlier_rmse_);
+            ResultICP icp_result = estimation.ComputeTransformationAndInformation(
+                    pcd, target_initialized, result.correspondence_set_);
+            Eigen::Matrix4d update = icp_result.transformation;
+            result.information_ = icp_result.information;
+            transformation = update * transformation;
+            pcd.Transform(update);
+            RegistrationResult backup = result;
+            result = GetRegistrationResultAndCorrespondences(
+                    pcd, target_initialized, kdtree, max_correspondence_distance,
+                    transformation);
+            result.information_ = backup.information_;
+            if (std::abs(backup.fitness_ - result.fitness_) <
+                        criteria.relative_fitness_ &&
+                std::abs(backup.inlier_rmse_ - result.inlier_rmse_) <
+                        criteria.relative_rmse_) {
+                break;
+            }
+        }
+    }
+  return result;
+}
+
 RegistrationResult RegistrationRANSACBasedOnCorrespondence(
         const geometry::PointCloud &source,
         const geometry::PointCloud &target,
