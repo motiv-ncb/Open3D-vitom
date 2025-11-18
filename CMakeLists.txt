@@ -35,7 +35,7 @@ include(CMakeDependentOption)
 
 # Open3D build options
 option(BUILD_SHARED_LIBS          "Build shared libraries"                   OFF)
-option(BUILD_EXAMPLES             "Build Open3D examples programs"           ON )
+option(BUILD_EXAMPLES             "Build Open3D examples programs"           OFF)
 option(BUILD_UNIT_TESTS           "Build Open3D unit tests"                  OFF)
 option(BUILD_BENCHMARKS           "Build the micro benchmarks"               OFF)
 option(BUILD_PYTHON_MODULE        "Build the python module"                  ON )
@@ -97,7 +97,7 @@ option(USE_SYSTEM_ASSIMP          "Use system pre-installed assimp"          OFF
 if (APPLE)
     option(USE_SYSTEM_CURL            "Use system pre-installed curl"         ON)
 else()
-    option(USE_SYSTEM_CURL            "Use system pre-installed curl"        OFF)
+    option(USE_SYSTEM_CURL            "Use system pre-installed curl"        ON )
 endif()
 option(USE_SYSTEM_CUTLASS         "Use system pre-installed cutlass"         OFF)
 option(USE_SYSTEM_EIGEN3          "Use system pre-installed eigen3"          OFF)
