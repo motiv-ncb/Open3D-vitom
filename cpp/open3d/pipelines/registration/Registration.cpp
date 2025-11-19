@@ -161,7 +161,7 @@ RegistrationResult RegistrationICP(
     return result;
 }
 
-RegistrationResult RegistrationICPStaged(
+std::vector<RegistrationResult> RegistrationICPStaged(
         const geometry::PointCloud &source,
         const geometry::PointCloud &target,
         const std::vector<double> &max_correspondence_distances,
@@ -192,6 +192,7 @@ RegistrationResult RegistrationICPStaged(
         pcd.Transform(init);
     }
     RegistrationResult result;
+    std::vector<RegistrationResult> all_results;
     for (size_t i = 0; i < criterias.size(); ++i) {
         auto criteria = criterias[i];
         auto max_correspondence_distance = max_correspondence_distances[i];
@@ -219,8 +220,9 @@ RegistrationResult RegistrationICPStaged(
                 break;
             }
         }
+        all_results.push_back(result);
     }
-  return result;
+  return all_results;
 }
 
 RegistrationResult RegistrationRANSACBasedOnCorrespondence(

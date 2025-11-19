@@ -157,7 +157,7 @@ RegistrationResult RegistrationICP(
                 TransformationEstimationPointToPoint(false),
         const ICPConvergenceCriteria &criteria = ICPConvergenceCriteria());
 
-RegistrationResult RegistrationICPStaged(
+std::vector<RegistrationResult> RegistrationICPStaged(
         const geometry::PointCloud &source,
         const geometry::PointCloud &target,
         const std::vector<double> &max_correspondence_distances,
