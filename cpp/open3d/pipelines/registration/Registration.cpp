@@ -191,12 +191,11 @@ std::vector<RegistrationResult> RegistrationICPStaged(
     if (!init.isIdentity()) {
         pcd.Transform(init);
     }
-    RegistrationResult result;
     std::vector<RegistrationResult> all_results;
     for (size_t i = 0; i < criterias.size(); ++i) {
-        auto criteria = criterias[i];
+        auto& criteria = criterias[i];
         auto max_correspondence_distance = max_correspondence_distances[i];
-        result = GetRegistrationResultAndCorrespondences(
+        auto result = GetRegistrationResultAndCorrespondences(
             pcd, target_initialized, kdtree, max_correspondence_distance,
             transformation);
         for (int i = 0; i < criteria.max_iteration_; i++) {
