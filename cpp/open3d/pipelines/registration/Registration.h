@@ -102,7 +102,8 @@ public:
     /// \param transformation The estimated transformation matrix.
     RegistrationResult(
             const Eigen::Matrix4d &transformation = Eigen::Matrix4d::Identity())
-        : transformation_(transformation), inlier_rmse_(0.0), fitness_(0.0) {}
+        : transformation_(transformation), inlier_rmse_(0.0), fitness_(0.0),
+          information_(Eigen::Matrix6d::Identity()) {}
     ~RegistrationResult() {}
     bool IsBetterRANSACThan(const RegistrationResult &other) const {
         return fitness_ > other.fitness_ || (fitness_ == other.fitness_ &&
@@ -230,6 +231,7 @@ Eigen::Matrix6d GetInformationMatrixFromPointClouds(
         const Eigen::Matrix4d &transformation);
 
 Eigen::Matrix6d GetInformationMatrixFromCorrespondenceSet(
+        const geometry::PointCloud &source,
         const geometry::PointCloud &target,
         const CorrespondenceSet &corres);
 
