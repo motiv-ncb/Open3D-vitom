@@ -385,36 +385,63 @@ Eigen::Matrix6d GetInformationMatrixFromCorrespondenceSet(
          const geometry::PointCloud &source,
          const geometry::PointCloud &target,
          const CorrespondenceSet &corres) {
-    if (!target.HasNormals()) {
-        utility::LogError(
-                "Require pre-computed normal vectors for target "
-                "PointCloud.");
+    if (target.HasNormals()) {
+        auto kernel = std::make_shared<L2Loss>();
+        auto compute_jacobian_and_residual = [&](int i, Eigen::Vector6d &J_r,
+                                                double &r, double &w) {
+            const Eigen::Vector3d &vs =
+                    source.points_[corres[i][0]];
+            const Eigen::Vector3d &vt =
+                    target.points_[corres[i][1]];
+            const Eigen::Vector3d &nt =
+                    target.normals_[corres[i][1]];
+            r = (vs - vt).dot(nt);
+            w = kernel->Weight(r);
+            J_r.block<3, 1>(0, 0) = vs.cross(nt);
+            J_r.block<3, 1>(3, 0) = nt;
+        };
+
+        Eigen::Matrix6d JTJ;
+        Eigen::Vector6d JTr;
+        double r2;
+        std::tie(JTJ, JTr, r2) =
+                utility::ComputeJTJandJTr<Eigen::Matrix6d, Eigen::Vector6d>(
+                        compute_jacobian_and_residual,
+                        (int)corres.size());
+        return JTJ;
+    } else {
+        Eigen::Matrix6d GTG = Eigen::Matrix6d::Zero();
+#pragma omp parallel
+        {
+            Eigen::Matrix6d GTG_private = Eigen::Matrix6d::Zero();
+            Eigen::Vector6d G_r_private = Eigen::Vector6d::Zero();
+#pragma omp for nowait
+            for (int c = 0; c < int(corres.size()); c++) {
+                int t = corres[c](1);
+                double x = target.points_[t](0);
+                double y = target.points_[t](1);
+                double z = target.points_[t](2);
+                G_r_private.setZero();
+                G_r_private(1) = z;
+                G_r_private(2) = -y;
+                G_r_private(3) = 1.0;
+                GTG_private.noalias() += G_r_private * G_r_private.transpose();
+                G_r_private.setZero();
+                G_r_private(0) = -z;
+                G_r_private(2) = x;
+                G_r_private(4) = 1.0;
+                GTG_private.noalias() += G_r_private * G_r_private.transpose();
+                G_r_private.setZero();
+                G_r_private(0) = y;
+                G_r_private(1) = -x;
+                G_r_private(5) = 1.0;
+                GTG_private.noalias() += G_r_private * G_r_private.transpose();
+            }
+#pragma omp critical(GetInformationMatrixFromPointClouds)
+              { GTG += GTG_private; }
+        }
+        return GTG;
     }
-
-    auto kernel = std::make_shared<L2Loss>();
-    auto compute_jacobian_and_residual = [&](int i, Eigen::Vector6d &J_r,
-                                             double &r, double &w) {
-        const Eigen::Vector3d &vs =
-                source.points_[corres[i][0]];
-        const Eigen::Vector3d &vt =
-                target.points_[corres[i][1]];
-        const Eigen::Vector3d &nt =
-                target.normals_[corres[i][1]];
-        r = (vs - vt).dot(nt);
-        w = kernel->Weight(r);
-        J_r.block<3, 1>(0, 0) = vs.cross(nt);
-        J_r.block<3, 1>(3, 0) = nt;
-    };
-
-    Eigen::Matrix6d JTJ;
-    Eigen::Vector6d JTr;
-    double r2;
-    std::tie(JTJ, JTr, r2) =
-            utility::ComputeJTJandJTr<Eigen::Matrix6d, Eigen::Vector6d>(
-                    compute_jacobian_and_residual,
-                    (int)corres.size());
-
-    return JTJ;
 }
 
 }  // namespace registration
